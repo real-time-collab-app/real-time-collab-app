@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import healthRoutes from "./routes/health.routes";
 import authRoutes from "./routes/auth.routes";
+import roomRoutes from "./routes/room.routes";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -30,6 +31,7 @@ app.use(cookieParser());
 // Routes
 app.use(healthRoutes);
 app.use("/auth", authRoutes);
+app.use("/rooms", roomRoutes);
 
 // 404 handler — catches any request that didn't match a route above
 app.use((req, res) => {
