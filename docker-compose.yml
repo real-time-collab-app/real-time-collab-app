@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rtc_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-init/00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql
+      - ./supabase/migrations/20260808193813_create_users_table.sql:/docker-entrypoint-initdb.d/01_create_users_table.sql
+      - ./supabase/migrations/20260809000000_create_rooms_and_room_members.sql:/docker-entrypoint-initdb.d/02_create_rooms_and_room_members.sql
+      - ./supabase/migrations/20260809000001_create_messages_table.sql:/docker-entrypoint-initdb.d/03_create_messages_table.sql
+      - ./supabase/migrations/20260809000002_create_board_items_table.sql:/docker-entrypoint-initdb.d/04_create_board_items_table.sql
+      - ./supabase/migrations/20260809000003_create_sessions_table.sql:/docker-entrypoint-initdb.d/05_create_sessions_table.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./apps/backend/.env.docker
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./apps/backend/src:/app/apps/backend/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
